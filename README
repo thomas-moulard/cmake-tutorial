@@ -1,0 +1,3 @@
+This is a minimal package defining two libraries, one program and one
+test. The goal is to write the corresponding CMakeLists.txt to compile
+them properly.
