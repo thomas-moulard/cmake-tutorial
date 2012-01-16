@@ -1,0 +1,854 @@
+% Copyright (C) 2012 by Thomas Moulard.
+%
+% Permission is granted to copy, distribute and/or modify this
+% document under the terms of the GNU Free Documentation License,
+% Version 1.3 or any later version published by the Free Software
+% Foundation; with no Invariant Sections, no Front-Cover Texts and
+% no Back-Cover Texts.  A copy of the license is included in the
+% section entitled "GNU Free Documentation License".
+
+\documentclass[hyperref={pdfpagelabels=false}]{beamer}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% LaTeX and Beamer setup.                                                    %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{lmodern}
+
+\usepackage{beamerthemesplit}
+\usepackage{multimedia}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{array}
+
+\usepackage{url}
+\usepackage{multicol}
+
+\usepackage{tikz, pgfplots}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Custom macros.                                                             %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newenvironment{changemargin}[2]{%
+\begin{list}{}{%
+\setlength{\topsep}{0pt}%
+\setlength{\leftmargin}{#1}%
+\setlength{\rightmargin}{#2}%
+\setlength{\listparindent}{\parindent}%
+\setlength{\itemindent}{\parindent}%
+\setlength{\parsep}{\parskip}%
+}%
+\item[]}{\end{list}}
+
+\newcommand{\putat}[3]{\begin{picture}(0,0)(0,0)\put(#1,#2){#3}\end{picture}}
+
+% Use tuned Warsaw theme.
+\mode<presentation>
+{
+  \usetheme{Madrid}
+  \usecolortheme{whale}
+  \setbeamercolor{uppercol}{fg=white,bg=blue!40}
+  \setbeamercolor{lowercol}{fg=black,bg=blue!15}
+  \beamertemplateshadingbackground{blue!5}{blue!20}
+  \beamertemplatenavigationsymbolsempty
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Meta-information.                                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title{CMake tutorial}
+\author[T. Moulard]{Thomas Moulard}
+\date[January 2012]{LAAS robotics courses, January 2012}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Document.                                                                  %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+\maketitle
+
+\section{Why are we here?}
+
+\begin{frame}
+\frametitle{Why are we here?}
+
+\begin{itemize}
+  \item All of you will have to compile software using CMake...
+  \item and most of you will have to write software using CMake!
+\end{itemize}
+
+\vspace{1cm}
+
+CMake is used by:
+\begin{itemize}
+  \item KDE4, MySQL, VXL, YARP, ROS\ldots
+  \item Various scientific packages (especially vision)
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Why should I use CMake?}
+
+\ldots because compiling a software is a complex, tedious process
+requiring various tools to work together!
+
+\vspace{1cm}
+
+CMake will help you compiling the piece software you need, however it
+is not magic and understanding (a bit!) what happens is
+\textbf{essential}.
+
+\end{frame}
+
+
+\section{The fastest compilation course on Earth}
+
+\begin{frame}
+\frametitle{The fastest compilation course on Earth (1)}
+
+The goal: producing a binary file called \textbf{program}.
+
+\vspace{0.3cm}
+
+These files can be encoded using different format, the most common one
+on Linux is called \textbf{ELF} (Executable and Linking Format).
+
+\vspace{0.3cm}
+
+This \textbf{program} contains \textbf{symbols} (i.e. subroutines).
+By conditionally jumping toward these \textbf{symbols}, a program can
+incorporate logic behaviors / logic statements (i.e. if, while, for).
+
+\vspace{0.3cm}
+
+The \textbf{symbols} contained in a \textbf{program} can be displayed
+using \texttt{objdump} or \texttt{nm}.
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (2)}
+
+The most common way to produce a \textbf{program} is by using a
+\textbf{compiler}.
+
+\vspace{0.3cm}
+
+A \textbf{compiler} takes as input a \textbf{source file} and produces
+a \textbf{program}.
+
+\vspace{0.3cm}
+
+The \textbf{source file} must contain a program expressed using a
+particular \textbf{programming language} the compiler can understand.
+
+Each \textbf{programming language} specifies where the execution will
+start.
+
+In C/C++, the starting point is the \textbf{main} function. Each C
+function produces a symbol. See ex1.
+
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (3)}
+
+\textbf{Starting here, we will deal with more precisely with C/C++.}
+
+\vspace{0.3cm}
+
+Soon enough, programmers needed a way to keep their code organized:
+the idea of splitting the \textbf{source file} into several ones
+emerged.
+
+\vspace{0.3cm}
+
+It was easy enough: each \textbf{source file} is compiled into an
+\textbf{object file}. All the \textbf{object files} are then merged
+together to produce the final \textbf{program}. This new step is
+called the \texttt{link} and is realized by a program called
+\texttt{ld}.
+
+\vspace{0.3cm}
+
+There is only one problem: how to handle the dependencies?
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (4)}
+
+\textbf{aux.c} - \texttt{gcc -c aux.c}
+\begin{verbatim}
+int mysubroutine ()
+{
+  // Do something...
+}
+\end{verbatim}
+
+\textbf{main.c} - \texttt{gcc -c main.c}
+\begin{verbatim}
+int main ()
+{
+  mysubroutine (); // THIS DOES NOT EXIST!
+}
+\end{verbatim}
+
+
+\texttt{gcc aux.o main.o -o myprogram}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (5)}
+
+The solution: allowing the programmer to \textit{promise} that a
+particular symbol (function) will be provided later.
+
+\textbf{main.c}
+\begin{verbatim}
+int mysubroutine ();
+
+int main ()
+{
+  mysubroutine (); // THIS EXISTS!
+}
+\end{verbatim}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (6)}
+
+Still, this solution does not scale well\ldots
+
+\textbf{aux1.c}
+\begin{verbatim}
+int mysubroutine1 () { /* something */ }
+\end{verbatim}
+
+\textbf{aux2.c}
+\begin{verbatim}
+int mysubroutine1 ();
+int mysubroutine2 () { mysubroutine2(); }
+\end{verbatim}
+
+\textbf{aux3.c}
+\begin{verbatim}
+int mysubroutine1 ();
+int mysubroutine2 ();
+int mysubroutine3 () { mysubroutine2() + mysubroutine1(); }
+\end{verbatim}
+
+
+What happend if I modify \texttt{aux1.c}? I must modify \textbf{ALL}
+the other files as well. The compiler always believe in what I
+promise, if I fail to modify the other \textbf{source files}
+accordindly, it will fail and tell me that I failed to follow my
+promises!
+
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (7)}
+
+To solve this issue, the \textbf{pre-processor} has been invented.
+
+\vspace{0.3cm}
+
+A \textbf{pre-processor} is a tool which modifies a \textbf{source
+  file} before the compiler to ease the writing of a program.
+
+\vspace{0.3cm}
+
+Basically, it copy, paste and replace piece of texts and has
+absolutely no idea of the underlying \textbf{programming language}.
+
+\vspace{0.3cm}
+
+For C/C++, this tool is called \textbf{C pre-processor}
+(i.e. \texttt{cpp}).
+
+\vspace{0.3cm}
+
+It is easy to recognize in a C/C++ \textbf{source file} which lines
+are \textbf{preprocessing directives}: they all begin with the \#
+character:
+
+\begin{itemize}
+\item \texttt{\#include}
+\item \texttt{\#define}
+\item \texttt{\#ifdef} \texttt{\#ifndef}
+\item \texttt{\#pragma}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (8)}
+
+Therefore, \textbf{headers} (i.e. what comes at the beginning) emerged
+as a universal \textbf{design pattern}.
+
+\textbf{aux.h}
+\begin{verbatim}
+int mysubroutine1 ();
+int mysubroutine2 ();
+int mysubroutine3 ();
+\end{verbatim}
+
+\textbf{aux1.c}
+\begin{verbatim}
+#include "/tmp/aux1.h"
+int mysubroutine1 () {}
+\end{verbatim}
+
+\textbf{main.c}
+\begin{verbatim}
+#include "/tmp/aux1.h"
+int main { mysubroutine3(); }
+\end{verbatim}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (9)}
+
+The C/C++ syntax forbids to declare several times the same
+function/\textbf{symbol}.
+
+\textbf{aux1.h}
+\begin{verbatim}
+int mysubroutine1 (){}
+\end{verbatim}
+\textbf{aux2.h}
+\begin{verbatim}
+#include "/tmp/aux1.h"
+int mysubroutine1 ();
+\end{verbatim}
+\textbf{aux3.h}
+\begin{verbatim}
+#include "/tmp/aux1.h"
+#include "/tmp/aux2.h" // ERROR HERE
+int mysubroutine1 ();
+\end{verbatim}
+
+\textbf{main.c}
+\begin{verbatim}
+#include "/tmp/aux3.h"
+int main { mysubroutine3(); }
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (10)}
+
+\textbf{Headers} are therefore defined as follow:
+
+\begin{verbatim}
+#ifndef MYPROJECT_AUX1_HH
+# define MYPROJECT_AUX1_HH
+int mysubroutine1 () {}
+#endif //! MYPROJECT_AUX1_HH
+\end{verbatim}
+
+It will trim the header if it has already been included elsewhere.
+It also save time as parsing the header can count up to 50\% of the
+total compilation time of a complex project.
+
+However, all of this is \textbf{good practices}, no pre-processor nor
+compiler will never check that this is done properly\ldots\\ What
+happens if someone else defines \texttt{MYPROJECT\_AUX1\_HH}?
+
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (11)}
+
+Do we really want that?
+
+\begin{verbatim}
+#include "/tmp/aux1.h"
+\end{verbatim}
+
+What if I do not have a \texttt{tmp} folder? What if I want to store
+the header somewhere else?
+
+\vspace{0.3cm}
+
+Let's change it to:
+
+\begin{verbatim}
+#include "aux1.h"
+\end{verbatim}
+
+\vspace{0.3cm}
+
+What we win in flexibility, we lose it by having to tune the compiler
+flags:
+
+\begin{verbatim}
+gcc -I/tmp main.c -o myprogram
+\end{verbatim}
+
+\vspace{0.3cm}
+
+But this scales (quite) well:
+
+\begin{verbatim}
+gcc -I/tmp -I/myfolder -I/my3rdfolder main.c -o myprogram
+\end{verbatim}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (12)}
+
+Ok, so \texttt{headers} are nice to share symbols among the same
+program! But how do that between multiple programs?
+
+\vspace{0.3cm}
+
+\ldots and the library was invented!
+
+\vspace{0.3cm}
+
+Libraries comes in two flavors:
+
+\begin{itemize}
+\item \textbf{static}
+\item or \textbf{dynamic}
+\end{itemize}
+
+Both kinds of libraries fulfills the same goal: providing \textit{set
+  of symbols} with no entry point to factor usefull algorithms.
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (13)}
+
+\textbf{Static} libraries are archives containing \textbf{object
+  files}.
+
+This kind of archives can be manipulated using the \texttt{ar} tool.
+
+\vspace{0.3cm}
+
+\begin{verbatim}
+gcc -c aux.c -o aux.o
+ar rcs aux.a aux.o
+
+gcc -c main.c -o main.o
+gcc main.o aux.a -o myprogram
+\end{verbatim}
+
+\vspace{0.3cm}
+
+\begin{itemize}
+\item Easy to use
+\item Widely supported
+\item \ldots but largely replaced by \textbf{dynamic libraries}!
+\end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (14)}
+
+\textbf{Dynamic libraries} is a mechanism which allows to resolve
+symbols are runtime.
+
+\begin{verbatim}
+gcc -I/tmp -c aux.c -o aux.o
+gcc -shared aux.o -o libaux.so
+
+gcc -I/tmp -c main.c -o main.o
+gcc main.o -L. -laux -o myprogram
+\end{verbatim}
+
+All shared libraries should be called \textbf{libSOMETHING.so} so that
+one can link against it using the \textbf{-lSOMETHING} flag.
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (15)}
+
+\textbf{Dynamic libraries} works as follow:
+
+\begin{itemize}
+\item At link time, the flag \texttt{-L} is used to retrieve the
+  required dynamic libraries linked with \texttt{-l}. This is only a
+  security to make sure that all the symbols declared in the headers
+  really exists. However, \textit{no compiled code} is included at
+  this time!
+\item At runtime, the dynamic libraries are loaded before the
+  execution starts. The lookup is different from the compile time (in
+  particular the \texttt{-L} flag do no impact this step).
+\end{itemize}
+
+The lookup is done as follow:
+\begin{itemize}
+  \item \texttt{LD\_LIBRARY\_PATH} environment variable
+  \item rpath: additional run-time path specified during the compilation
+  \item \texttt{/etc/ld.so.cache}: cache file containing system libraries
+  \item default hard-coded paths: /lib and /usr/lib.
+\end{itemize}
+
+This is a simplified process, each step has exceptions which are not
+mentioned here. It is also highly system dependent, this one is for
+the \texttt{ld.so} Linux linker.
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{The fastest compilation course on Earth (16)}
+
+Ok, so let's wrap it up. To compile a software, one needs to setup the
+compiler and give it the following information:
+
+\begin{description}
+\item[\textbf{Header} location] using the \texttt{-I} flag,
+\item[\textbf{Dynamic libraries} location] using the \texttt{-L} flag,
+\item[\textbf{Dynamic libraries} dependencies] using the \texttt{-l}
+  flag.
+\end{description}
+
+Additional flags are also useful:
+\begin{description}
+\item[Warning management] using the \texttt{-W*} flag.\\ I really highly
+  encourage you to use \texttt{-Werror -Wall} in all your projects!
+\item[Debug] using the \texttt{-g} and \texttt{-ggdbN} flags,
+\item[Optimization] using the \texttt{-On} flags.
+\end{description}
+
+Also, supporting additional compilers are useful for cross-compiling
+(some robots are not using x86 architecture) or obtaining improved
+performances (such as \texttt{icc} the Intel Compiler).
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Build-chain tools}
+
+So now you want to have a properly designed package, you must make it
+configurable to change the flags and also retrieve properly the
+compilation flags needed to build your software.
+
+\vspace{0.3cm}
+
+The classic way is writing a \texttt{Makefile}. This file teaches the
+\texttt{make} program how to generate certain program.
+
+\begin{verbatim}
+# Create the toto.txt file.
+make toto.txt
+\end{verbatim}
+
+Its syntax is basically:
+\begin{verbatim}
+output: input1 input2
+    command which generates output from input1/input2 (shell)
+\end{verbatim}
+\end{frame}
+
+\texttt{output} is called a \textbf{target}.
+
+\begin{frame}[fragile]
+\frametitle{Build-chain tools}
+
+This approach has several drawbacks:
+
+\begin{itemize}
+\item \texttt{Makefile} are not configurable,
+\item \texttt{Makefile} are not human friendly,
+\item it is difficult to write portable and reusable \texttt{Makefile}s.
+\end{itemize}
+
+Therefore, we will let CMake generate \texttt{Makefile}s for us!
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Depending on other libraries}
+
+It is extremely difficult to guess third party dependencies flags, but
+one tool can help us: \texttt{pkg-config}.
+
+\vspace{0.2cm}
+
+\texttt{pkg-config} can display what flags are required for a
+particular package.
+
+\begin{verbatim}
+pkg-config --cflags my-package
+pkg-config --libs my-package
+\end{verbatim}
+
+The only condition is that \texttt{my-package} provides a \texttt{.pc}
+file containing the required information.
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{Installing data}
+
+A package is more than a set of programs, it contains documentation,
+tests\ldots So one last question remains: how to structure your
+package and where to install the data?
+
+\vspace{0.3cm}
+
+On Linux, the folder hierarchy is defined by the \textit{Filesystem
+  Hierarchy Standard} aka FHS.
+
+\begin{description}
+\item[\texttt{bin}] binaries
+\item[\texttt{lib}] static and dynamic libraries
+\item[\texttt{include}] headers
+\item[\texttt{share}] platform-independent files
+  \begin{description}
+  \item[\texttt{doc}] documentation
+  \end{description}
+\end{description}
+
+Several standard prefixes exist: \texttt{/}, \texttt{/usr},
+\texttt{/usr/local} and additional ones are often defined (on your
+home account for RobotPkg).
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Package structure}
+
+Before being installed, the structure is roughly the same:
+
+\begin{description}
+\item[\texttt{doc}] documentation (should be \texttt{share/doc})
+\item[\texttt{include}] headers
+\item[\texttt{share}] platform-independent files
+\item[\texttt{src}] source files and private headers
+\item[\texttt{tests}] tests
+\item[\texttt{README}, \texttt{NEWS}, \texttt{LICENSE}] root-level
+  documentation.
+\end{description}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Using CMake}
+
+Compiling a software using CMake is very easy:
+
+\begin{verbatim}
+cd my-project-0.1
+mkdir build
+cd build
+ccmake .. # cmake .. to avoid using the GUI
+make
+make install # for instance...
+\end{verbatim}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{CMake primer}
+
+CMake is a tool which will handle the build-chain by generating
+appropriate \texttt{Makefile}s semi-automatically.
+
+\vspace{0.3cm}
+
+To do so, it parses \texttt{CMakeLists.txt} files which contains
+building instructions. This is a pseudo-script language with limited
+features but which is quite easy to understand.
+
+\vspace{0.3cm}
+
+API changes depending on the CMake version, so be extremely careful!
+Last stable version is 2.8, it is reasonale to be backward dependent
+up-to 2.6.
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{CMake syntax}
+
+The language is case independent.
+
+\begin{verbatim}
+# This is a comment....
+
+# Variable assignment (A=1)
+SET(A 1)
+
+# This set MYLENGTH to 9.
+STRING(LENGTH "my string" MYLENGTH)
+
+MACRO FOO()
+ MESSAGE("This is the function called FOO")
+ENDMACRO()
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{CMake API overview}
+
+You can read the documentation online or by typing \texttt{man cmake}:
+\url{http://www.cmake.org/cmake/help/cmake2.6docs.html}
+
+\begin{description}
+\item[\texttt{ADD\_EXECUTABLE}] compiles a program.
+\item[\texttt{ADD\_LIBRARY}] compiles a static or dynamic library.
+\item[\texttt{ADD\_SUBDIRECTORY(SUBDIR)}] includes
+\item[\texttt{ADD\_TEST}] compiles a test (i.e. a program which is
+  executed when \texttt{make test} is launched).
+\item[\texttt{INSTALL}] install a file or a target in the installation
+  prefix.
+\end{description}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{CMake API overview (2)}
+
+\begin{description}
+\item[\texttt{PROJECT}] Define the project name (and set the
+  \texttt{PROJECT\_NAME} variable).
+\item[\texttt{TARGET\_LINK\_LIBRARIES}] Link a target against a
+  library.
+\item[\texttt{ENABLE\_TESTING}] Generate a \texttt{test} target.
+\item[\texttt{INCLUDE\_DIRECTORIES}] Add a new directory in which
+  headers will be searched (i.e. \texttt{-I} GCC compilation flag).
+\item[\texttt{LINK\_DIRECTORIES}] Add a new directory in which
+  libraries will be searched (i.e. \texttt{-L} GCC compilation flag).
+\item[\texttt{ADD\_DEFINITIONS}] Add a new pre-processor definition
+  (i.e. \texttt{-D} GCC compilation flag).
+\item[\texttt{SET\_TARGET\_PROPERTIES}] Set compilation flags manually
+  for a specific target.
+\end{description}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{CMake API overview (3)}
+
+Additional, general purpose, macros are: \texttt{STRING},
+\texttt{MATH}.
+
+\vspace{0.3cm}
+
+Logic statements are supported: \texttt{IF}, \texttt{FOREACH},
+\texttt{WHILE}\ldots but it is usually a bad idea to write too complex
+CMake scripts.
+
+\vspace{0.3cm}
+
+One can also look for files (\texttt{FIND\_FILE}), libraries
+(\texttt{FIND\_LIBRARY}), packages (\texttt{FIND\_PACKAGES}), path
+(\texttt{FIND\_PATH}).
+
+\vspace{0.3cm}
+
+Macros for Boost, BLAS and numerous other libraries are available. Do
+not trust them too much as most of them are buggy (really!).
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Configuring files}
+
+Sometimes, it is necessary to generate files by hand. For example:
+\begin{itemize}
+\item Generate a header with the project version number.
+\item Generate a \texttt{.pc} file from a template file.
+\end{itemize}
+
+\texttt{CONFIGURE\_FILE} can be used to do so. It will look for the
+\texttt{@XYZ@} patterns and replace them by the value of the variable
+\texttt{XYZ} in CMake.
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{CMake cache}
+
+A (not so) food feature of CMake is the cache. It allows some values
+to be remembered between two \texttt{Makefile} generation to gain time
+and remember the user choices.
+
+
+See \texttt{CMakeCache.txt} file in the build directory.
+
+\vspace{0.3cm}
+
+Additional options of the \texttt{SET} macro can be used to create a
+cached variable. One can set the cached variable type, description in
+\texttt{ccmake}, etc. See also \texttt{OPTION}.
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{CMake tutorial}
+
+A package is available here:
+
+\vspace{0.1cm}
+
+\texttt{git clone \url{git://github.com/thomas-moulard/cmake-tutorial.git}}
+
+\vspace{0.3cm}
+
+It contains two libraries, one program, one test. The goal is to write
+the corresponding \texttt{CMakeLists.txt} using CMake.
+
+\begin{itemize}
+\item Compile the shared libraries \texttt{libfoo.so} and \texttt{libbar.so}
+\item Compile the program \texttt{my-program}
+\item Compile the test \texttt{bar-test} using \texttt{bar.cc}
+\item Write the installation rules.
+\item Bonus: generate \texttt{foo.pc} and \texttt{bar.pc} from a
+  template file called \texttt{pkg-config.pc.in} and install them in
+  \texttt{<prefix>/lib/pkgconfig}.
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{One last thing\ldots}
+
+CMake is missing some crucial elements such as proper
+\texttt{pkg-config} and \texttt{doxygen} support. To avoid reinventing
+the wheel, the CMake macros used by GEPETTO are available on GitHub:
+
+\vspace{0.2cm}
+
+\url{https://github.com/jrl-umi3218/jrl-cmakemodules}
+
+\vspace{0.3cm}
+
+In your favorite Git enabled project, type:\\
+\texttt{git submodule add \url{git://github.com/jrl-umi3218/jrl-cmakemodules.git} cmake}
+
+\end{frame}
+
+
+\end{document}
