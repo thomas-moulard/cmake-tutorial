@@ -1,4 +1,5 @@
-#include "bar.h"
+#include <iostream>
+#include "bar.hh"
 
 int main ()
 {

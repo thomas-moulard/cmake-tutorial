@@ -1,10 +1,12 @@
 #ifndef BAR_HH
 # define BAR_HH
+# include <foo.hh>
 
 namespace bar
 {
   class MySubClass : public foo::MyClass
   {
+  public:
     MySubClass ();
     virtual ~MySubClass ();
 

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "foo.h"
+#include "foo.hh"
 
 namespace foo
 {

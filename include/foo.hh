@@ -5,6 +5,7 @@ namespace foo
 {
   class MyClass
   {
+  public:
     MyClass ();
     virtual ~MyClass ();
 
