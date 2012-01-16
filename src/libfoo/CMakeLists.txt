@@ -1,0 +1,1 @@
+ADD_LIBRARY(foo SHARED foo.cc)

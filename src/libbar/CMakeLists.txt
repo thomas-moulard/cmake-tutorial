@@ -1,0 +1,2 @@
+ADD_LIBRARY(bar SHARED bar.cc)
+TARGET_LINK_LIBRARIES(bar foo)
