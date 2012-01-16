@@ -1,10 +1,10 @@
 #include <iostream>
-#include "bar.h"
+#include "bar.hh"
 
-namespace foo
+namespace bar
 {
   MySubClass::MySubClass ()
-    : public foo::MyClass
+    : foo::MyClass ()
   {
     std::cout << __PRETTY_FUNCTION__ << std::endl;
   }
@@ -13,4 +13,4 @@ namespace foo
   {
     std::cout << __PRETTY_FUNCTION__ << std::endl;
   }
-} // end of namespace foo.
+} // end of namespace bar.
